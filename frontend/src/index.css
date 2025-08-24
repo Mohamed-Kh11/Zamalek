@@ -1,0 +1,46 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  margin: 0;
+  box-sizing: border-box;
+}
+
+@font-face {
+  font-family: "ubuntu";
+  src: url("./assets/fonts/Ubuntu/Ubuntu-Regular.ttf") format("truetype");
+  font-weight: 400;
+}
+@font-face {
+  font-family: "ubuntu";
+  src: url("./assets/fonts/Ubuntu/Ubuntu-Bold.ttf") format("truetype");
+  font-weight: bold;
+}
+
+@font-face {
+  font-family: "poppins";
+  src: url("./assets/fonts/Poppins/Poppins-Regular.ttf") format("truetype");
+  font-weight: 400;
+}
+@font-face {
+  font-family: "poppins";
+  src: url("./assets/fonts/Poppins/Poppins-Bold.ttf") format("truetype");
+  font-weight: bold;
+}
+
+@font-face {
+  font-family: "josefin";
+  src: url("./assets/fonts/Josefin/JosefinSans-Regular.ttf") format("truetype");
+  font-weight: 400;
+}
+@font-face {
+  font-family: "josefin";
+  src: url("./assets/fonts/Josefin/JosefinSans-Bold.ttf") format("truetype");
+  font-weight: bold;
+}
+
+/* bg-gradient-to-r from-red-500 to-red-700 */
+.redGradient {
+  background: linear-gradient(to right, #ef4444, #b91c1c);
+}

@@ -1,0 +1,15 @@
+{
+  "advices": [
+    { "id": 1, "text": "Never stop learning, because life never stops teaching." },
+    { "id": 2, "text": "Be kind whenever possible. It is always possible." },
+    { "id": 3, "text": "Success is not final, failure is not fatal: it is the courage to continue that counts." },
+    { "id": 4, "text": "Don’t watch the clock; do what it does. Keep going." },
+    { "id": 5, "text": "Happiness is not something ready-made. It comes from your own actions." },
+    { "id": 6, "text": "Difficulties in life are intended to make us better, not bitter." },
+    { "id": 7, "text": "Believe you can and you're halfway there." },
+    { "id": 8, "text": "Opportunities don't happen. You create them." },
+    { "id": 9, "text": "A goal without a plan is just a wish." },
+    { "id": 10, "text": "Do what you can, with what you have, where you are." },
+    { "id": 11, "text": "Never trust jews." }
+  ]
+}
