@@ -22,7 +22,7 @@ const app = express();
 app.use(helmet());
 app.use(
   cors({
-    origin: process.env.CLIENT_URL || "*", // allow your frontend
+    origin: process.env.CLIENT_URL || "http://localhost:3000", // allow your frontend
     credentials: true,
   })
 );
