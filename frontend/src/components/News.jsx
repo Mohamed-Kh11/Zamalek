@@ -1,8 +1,52 @@
 import React, { useEffect, useState } from "react";
 import { formatDistanceToNow } from "date-fns";
-import NewsForm from "./NewsForm";
 import { useNavigate } from "react-router-dom";
+import axios from "axios"; // Import axios
+import NewsForm from "./NewsForm";
 
+// The NewsForm component is assumed to be in the same directory.
+// This is a placeholder for your existing NewsForm component.
+// const NewsForm = ({ form, setForm, handleSubmit, editingId }) => {
+//   return (
+//     <form
+//       onSubmit={handleSubmit}
+//       className="bg-white p-6 rounded-xl shadow-md w-full max-w-lg flex flex-col gap-4"
+//     >
+//       <h2 className="text-lg font-bold text-red-600">
+//         {editingId ? "Edit News" : "Add News"}
+//       </h2>
+//       <input
+//         type="text"
+//         value={form.title}
+//         onChange={(e) => setForm({ ...form, title: e.target.value })}
+//         placeholder="Title"
+//         className="border p-2 rounded"
+//         required
+//       />
+//       <textarea
+//         value={form.content}
+//         onChange={(e) => setForm({ ...form, content: e.target.value })}
+//         placeholder="Content"
+//         className="border p-2 rounded h-32"
+//         required
+//       ></textarea>
+//       <input
+//         type="file"
+//         accept="image/*"
+//         onChange={(e) => setForm({ ...form, image: e.target.files[0] })}
+//         className="border p-2 rounded"
+//       />
+//       <button
+//         type="submit"
+//         className="bg-red-600 text-white py-2 px-4 rounded hover:bg-red-700 transition"
+//       >
+//         {editingId ? "Update News" : "Add News"}
+//       </button>
+//     </form>
+//   );
+// };
+
+// Main News Component
 const News = () => {
   const [newsArticles, setNewsArticles] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -10,27 +54,32 @@ const News = () => {
   const [editingId, setEditingId] = useState(null);
   const [showForm, setShowForm] = useState(false);
 
-  // ✅ Use environment variable (fallback to localhost for dev)
+  // Use environment variable (fallback to localhost for dev)
   const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
   const navigate = useNavigate();
-  const user = JSON.parse(localStorage.getItem("user")); // Only admins exist
+  // Check for admin status from local storage
+  const user = JSON.parse(localStorage.getItem("user"));
   const isAdmin = !!user;
 
+  // --- GET Request with Axios ---
   useEffect(() => {
-    fetch(`${API_URL}/api/news`)
-      .then((res) => res.json())
-      .then((data) => {
-        setNewsArticles(data);
+    const fetchNews = async () => {
+      try {
+        const res = await axios.get(`${API_URL}/api/news`, {
+          withCredentials: true, // This is crucial for sending httpOnly cookies
+        });
+        setNewsArticles(res.data);
+      } catch (err) {
+        console.error("Error fetching news:", err.response?.data || err.message);
+      } finally {
         setLoading(false);
-      })
-      .catch((err) => {
-        console.error("Error fetching news:", err);
-        setLoading(false);
-      });
+      }
+    };
+    fetchNews();
   }, [API_URL]);
 
-  // Add or update news
+  // --- POST/PATCH Request with Axios ---
   const handleSubmit = async (e) => {
     e.preventDefault();
     const formData = new FormData();
@@ -38,26 +87,26 @@ const News = () => {
     formData.append("content", form.content);
     if (form.image) formData.append("image", form.image);
 
-    const token = localStorage.getItem("token");
+    // The token from localStorage is no longer needed since we use httpOnly cookies
+    // and `withCredentials: true`.
 
     try {
       let res;
       if (editingId) {
-        res = await fetch(`${API_URL}/api/news/${editingId}`, {
-          method: "PATCH",
-          headers: { Authorization: `Bearer ${token}` },
-          body: formData,
+        // PATCH request for editing
+        res = await axios.patch(`${API_URL}/api/news/${editingId}`, formData, {
+          withCredentials: true,
+          headers: { "Content-Type": "multipart/form-data" },
         });
       } else {
-        res = await fetch(`${API_URL}/api/news`, {
-          method: "POST",
-          headers: { Authorization: `Bearer ${token}` },
-          body: formData,
+        // POST request for new article
+        res = await axios.post(`${API_URL}/api/news`, formData, {
+          withCredentials: true,
+          headers: { "Content-Type": "multipart/form-data" },
         });
       }
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message);
+      const data = res.data;
 
       if (editingId) {
         setNewsArticles((prev) =>
@@ -69,28 +118,21 @@ const News = () => {
 
       setForm({ title: "", content: "", image: null });
       setEditingId(null);
+      setShowForm(false);
     } catch (err) {
-      console.error("Error saving news:", err);
+      console.error("Error saving news:", err.response?.data || err.message);
     }
   };
 
-  // Delete news
+  // --- DELETE Request with Axios ---
   const handleDelete = async (id) => {
-    const token = user?.token;
     try {
-      const res = await fetch(`${API_URL}/api/news/${id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
+      await axios.delete(`${API_URL}/api/news/${id}`, {
+        withCredentials: true,
       });
-
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.message || "Failed to delete news");
-      }
-
       setNewsArticles((prev) => prev.filter((n) => n._id !== id));
     } catch (err) {
-      console.error("Error deleting news:", err);
+      console.error("Error deleting news:", err.response?.data || err.message);
     }
   };
 
@@ -116,19 +158,20 @@ const News = () => {
       {isAdmin && (
         <div className="flex flex-col items-center gap-4">
           <button
-            onClick={() => setShowForm((prev) => !prev)}
+            onClick={() => {
+              setShowForm((prev) => !prev);
+              setEditingId(null); // Reset editing ID when showing form
+              setForm({ title: "", content: "", image: null }); // Reset form
+            }}
             className="bg-red-600 text-white py-2 px-6 rounded-xl hover:bg-red-700 transition"
           >
-            {showForm ? "Hide Form" : editingId ? "Edit News" : "Add News"}
+            {showForm ? "Hide Form" : "Add News"}
           </button>
           {showForm && (
             <NewsForm
               form={form}
               setForm={setForm}
-              handleSubmit={(e) => {
-                handleSubmit(e);
-                setShowForm(false);
-              }}
+              handleSubmit={handleSubmit}
               editingId={editingId}
             />
           )}
