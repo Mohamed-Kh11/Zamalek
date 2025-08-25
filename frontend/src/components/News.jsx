@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import { formatDistanceToNow } from "date-fns";
 import NewsForm from "./NewsForm";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
 
 const News = () => {
   const [newsArticles, setNewsArticles] = useState([]);
@@ -10,32 +9,28 @@ const News = () => {
   const [form, setForm] = useState({ title: "", content: "", image: null });
   const [editingId, setEditingId] = useState(null);
   const [showForm, setShowForm] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false); // State for admin check
 
+  // ✅ Use environment variable (fallback to localhost for dev)
   const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
+
   const navigate = useNavigate();
+  const user = JSON.parse(localStorage.getItem("user")); // Only admins exist
+  const isAdmin = !!user;
 
-  // 1. Fetch user info to check for Admin status (Relies on a backend /api/auth/me endpoint)
   useEffect(() => {
-    // This assumes your backend returns a user object with a 'role' field
-    axios
-      .get(`${API_URL}/api/auth/me`, { withCredentials: true })
-      .then((res) => {
-        setIsAdmin(res.data?.role === "admin");
+    fetch(`${API_URL}/api/news`)
+      .then((res) => res.json())
+      .then((data) => {
+        setNewsArticles(data);
+        setLoading(false);
       })
-      .catch(() => setIsAdmin(false));
+      .catch((err) => {
+        console.error("Error fetching news:", err);
+        setLoading(false);
+      });
   }, [API_URL]);
 
-  // 2. Fetch news articles
-  useEffect(() => {
-    axios
-      .get(`${API_URL}/api/news`, { withCredentials: true })
-      .then((res) => setNewsArticles(res.data))
-      .catch((err) => console.error("Error fetching news:", err))
-      .finally(() => setLoading(false));
-  }, [API_URL]);
-
-  // 3. Add or update news
+  // Add or update news
   const handleSubmit = async (e) => {
     e.preventDefault();
     const formData = new FormData();
@@ -43,45 +38,59 @@ const News = () => {
     formData.append("content", form.content);
     if (form.image) formData.append("image", form.image);
 
+    const token = localStorage.getItem("token");
+
     try {
-      const url = editingId
-        ? `${API_URL}/api/news/${editingId}`
-        : `${API_URL}/api/news`;
-      const method = editingId ? "patch" : "post";
+      let res;
+      if (editingId) {
+        res = await fetch(`${API_URL}/api/news/${editingId}`, {
+          method: "PATCH",
+          headers: { Authorization: `Bearer ${token}` },
+          body: formData,
+        });
+      } else {
+        res = await fetch(`${API_URL}/api/news`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+          body: formData,
+        });
+      }
 
-      const res = await axios({
-        method,
-        url,
-        data: formData,
-        withCredentials: true,
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message);
 
-      const data = res.data;
+      if (editingId) {
+        setNewsArticles((prev) =>
+          prev.map((n) => (n._id === editingId ? data : n))
+        );
+      } else {
+        setNewsArticles([data, ...newsArticles]);
+      }
 
-      // Update state based on whether it was an edit or new post
-      setNewsArticles((prev) =>
-        editingId ? prev.map((n) => (n._id === editingId ? data : n)) : [data, ...prev]
-      );
-
-      // Reset form states
       setForm({ title: "", content: "", image: null });
       setEditingId(null);
-      setShowForm(false); // Closes the form after successful submission
     } catch (err) {
-      console.error("Error saving news:", err.response?.data?.message || err.message);
+      console.error("Error saving news:", err);
     }
   };
 
-  // 4. Delete news
+  // Delete news
   const handleDelete = async (id) => {
+    const token = user?.token;
     try {
-      await axios.delete(`${API_URL}/api/news/${id}`, {
-        withCredentials: true,
+      const res = await fetch(`${API_URL}/api/news/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
       });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.message || "Failed to delete news");
+      }
+
       setNewsArticles((prev) => prev.filter((n) => n._id !== id));
     } catch (err) {
-      console.error("Error deleting news:", err.response?.data?.message || err.message);
+      console.error("Error deleting news:", err);
     }
   };
 
@@ -97,51 +106,29 @@ const News = () => {
     return (
       <div className="py-10 text-center text-gray-600 text-lg">
         No news available yet.
-        {/* Render the admin form button even if no news articles exist */}
-        {isAdmin && (
-          <div className="flex flex-col items-center gap-4 mt-4">
-            <button
-              onClick={() => setShowForm((prev) => !prev)}
-              className="bg-red-600 text-white py-2 px-6 rounded-xl hover:bg-red-700 transition"
-            >
-              {showForm ? "Hide Form" : "Add News"}
-            </button>
-            {showForm && (
-              <NewsForm
-                form={form}
-                setForm={setForm}
-                handleSubmit={handleSubmit}
-                editingId={editingId}
-              />
-            )}
-          </div>
-        )}
       </div>
     );
   }
 
   return (
     <div className="py-6 min-h-screen space-y-10 bg-gray-50">
-      
-      {/* Admin Form Button and Form */}
+      {/* Admin Form */}
       {isAdmin && (
         <div className="flex flex-col items-center gap-4">
           <button
-            onClick={() => {
-                setShowForm((prev) => !prev);
-                setEditingId(null); // Clear editing state when opening for Add
-                setForm({ title: "", content: "", image: null }); // Clear form data
-            }}
+            onClick={() => setShowForm((prev) => !prev)}
             className="bg-red-600 text-white py-2 px-6 rounded-xl hover:bg-red-700 transition"
           >
             {showForm ? "Hide Form" : editingId ? "Edit News" : "Add News"}
           </button>
-
           {showForm && (
             <NewsForm
               form={form}
               setForm={setForm}
-              handleSubmit={handleSubmit}
+              handleSubmit={(e) => {
+                handleSubmit(e);
+                setShowForm(false);
+              }}
               editingId={editingId}
             />
           )}
@@ -178,7 +165,6 @@ const News = () => {
                 })}
               </p>
 
-              {/* ✅ Edit/Delete Buttons for Hero News */}
               {isAdmin && (
                 <div className="flex gap-3">
                   <button
@@ -189,7 +175,7 @@ const News = () => {
                         image: null,
                       });
                       setEditingId(newsArticles[0]._id);
-                      setShowForm(true); // Open the form for editing
+                      setShowForm(true);
                     }}
                     className="text-blue-600 hover:underline"
                   >
@@ -242,7 +228,7 @@ const News = () => {
                     addSuffix: true,
                   })}
                 </p>
-                {/* ✅ Edit/Delete Buttons for Grid News */}
+
                 {isAdmin && (
                   <div className="flex gap-3 mt-3">
                     <button
@@ -253,7 +239,7 @@ const News = () => {
                           image: null,
                         });
                         setEditingId(article._id);
-                        setShowForm(true); // Open the form for editing
+                        setShowForm(true);
                       }}
                       className="text-blue-600 hover:underline"
                     >
