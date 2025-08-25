@@ -30,7 +30,9 @@ const Players = () => {
   useEffect(() => {
     const fetchPlayers = async () => {
       try {
-        const { data } = await axios.get(`${API_URL}/api/players`);
+        const { data } = await axios.get(`${API_URL}/api/players`, {
+          withCredentials: true,
+        });
         const sorted = data.sort(
           (a, b) => (positionOrder[a.position] || 99) - (positionOrder[b.position] || 99)
         );
@@ -59,14 +61,14 @@ const Players = () => {
       let res;
       if (editingId) {
         res = await axios.put(`${API_URL}/api/players/${editingId}`, formData, {
-          headers: { Authorization: `Bearer ${token}` },
+          withCredentials: true,
         });
         setPlayers((prev) =>
           prev.map((p) => (p._id === editingId ? res.data : p))
         );
       } else {
         res = await axios.post(`${API_URL}/api/players`, formData, {
-          headers: { Authorization: `Bearer ${token}` },
+          withCredentials: true,
         });
         setPlayers((prev) => [res.data, ...prev]);
       }
@@ -84,8 +86,8 @@ const Players = () => {
   const handleDelete = async (id) => {
     try {
       await axios.delete(`${API_URL}/api/players/${id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+          withCredentials: true,
+        });
       setPlayers((prev) => prev.filter((p) => p._id !== id));
     } catch (err) {
       console.error("Error deleting player:", err.response?.data || err.message);
