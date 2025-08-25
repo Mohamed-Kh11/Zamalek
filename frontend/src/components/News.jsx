@@ -10,18 +10,21 @@ const News = () => {
   const [form, setForm] = useState({ title: "", content: "", image: null });
   const [editingId, setEditingId] = useState(null);
   const [showForm, setShowForm] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
-
   const navigate = useNavigate();
-  const user = JSON.parse(localStorage.getItem("user"));
-  const isAdmin = !!user;
+
+  // Configure axios to always send cookies
+  axios.defaults.withCredentials = true;
 
   // Fetch news
   useEffect(() => {
     const fetchNews = async () => {
       try {
-        const res = await axios.get(`${API_URL}/api/news`);
+        const res = await axios.get(`${API_URL}/api/news`, {
+          withCredentials: true,
+        });
         setNewsArticles(res.data);
       } catch (err) {
         console.error("Error fetching news:", err);
@@ -29,7 +32,20 @@ const News = () => {
         setLoading(false);
       }
     };
+
+    const checkAdmin = async () => {
+      try {
+        const res = await axios.get(`${API_URL}/api/auth/me`, {
+          withCredentials: true,
+        });
+        setIsAdmin(res.data?.role === "admin");
+      } catch {
+        setIsAdmin(false);
+      }
+    };
+
     fetchNews();
+    checkAdmin();
   }, [API_URL]);
 
   // Add or update news
@@ -39,8 +55,6 @@ const News = () => {
     formData.append("title", form.title);
     formData.append("content", form.content);
     if (form.image) formData.append("image", form.image);
-
-    const token = localStorage.getItem("token");
 
     try {
       const url = editingId
@@ -52,10 +66,8 @@ const News = () => {
         method,
         url,
         data: formData,
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "multipart/form-data",
-        },
+        headers: { "Content-Type": "multipart/form-data" },
+        withCredentials: true, // send cookie
       });
 
       const data = res.data;
@@ -79,10 +91,9 @@ const News = () => {
 
   // Delete news
   const handleDelete = async (id) => {
-    const token = localStorage.getItem("token");
     try {
       await axios.delete(`${API_URL}/api/news/${id}`, {
-        headers: { Authorization: `Bearer ${token}` },
+        withCredentials: true, // send cookie
       });
 
       setNewsArticles((prev) => prev.filter((n) => n._id !== id));
