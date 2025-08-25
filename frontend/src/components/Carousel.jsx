@@ -72,7 +72,7 @@ const Carousel = () => {
                 {article.title}
               </h2>
             </div>
-            <div className="absolute w-full h-[20%] md:h-[15%] bg-red-700 bottom-0 z-10"></div>
+            <div className="absolute w-full h-[23%] md:h-[20%] bg-red-700 bottom-0 z-10"></div>
           </div>
         ))}
       </Slider>
