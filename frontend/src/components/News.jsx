@@ -10,23 +10,23 @@ const News = () => {
   const [form, setForm] = useState({ title: "", content: "", image: null });
   const [editingId, setEditingId] = useState(null);
   const [showForm, setShowForm] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false); // State for admin check
 
   const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
-
   const navigate = useNavigate();
-  const [isAdmin, setIsAdmin] = useState(false);
 
-  // ✅ Fetch user info from backend (instead of localStorage)
+  // 1. Fetch user info to check for Admin status (Relies on a backend /api/auth/me endpoint)
   useEffect(() => {
+    // This assumes your backend returns a user object with a 'role' field
     axios
       .get(`${API_URL}/api/auth/me`, { withCredentials: true })
       .then((res) => {
-        setIsAdmin(res.data?.role === "admin"); // backend should return role
+        setIsAdmin(res.data?.role === "admin");
       })
       .catch(() => setIsAdmin(false));
   }, [API_URL]);
 
-  // ✅ Fetch news
+  // 2. Fetch news articles
   useEffect(() => {
     axios
       .get(`${API_URL}/api/news`, { withCredentials: true })
@@ -35,7 +35,7 @@ const News = () => {
       .finally(() => setLoading(false));
   }, [API_URL]);
 
-  // ✅ Add or update news
+  // 3. Add or update news
   const handleSubmit = async (e) => {
     e.preventDefault();
     const formData = new FormData();
@@ -53,25 +53,27 @@ const News = () => {
         method,
         url,
         data: formData,
-        withCredentials: true, // ✅ Send cookies
+        withCredentials: true,
         headers: { "Content-Type": "multipart/form-data" },
       });
 
       const data = res.data;
 
+      // Update state based on whether it was an edit or new post
       setNewsArticles((prev) =>
         editingId ? prev.map((n) => (n._id === editingId ? data : n)) : [data, ...prev]
       );
 
+      // Reset form states
       setForm({ title: "", content: "", image: null });
       setEditingId(null);
-      setShowForm(false);
+      setShowForm(false); // Closes the form after successful submission
     } catch (err) {
       console.error("Error saving news:", err.response?.data?.message || err.message);
     }
   };
 
-  // ✅ Delete news
+  // 4. Delete news
   const handleDelete = async (id) => {
     try {
       await axios.delete(`${API_URL}/api/news/${id}`, {
@@ -95,17 +97,41 @@ const News = () => {
     return (
       <div className="py-10 text-center text-gray-600 text-lg">
         No news available yet.
+        {/* Render the admin form button even if no news articles exist */}
+        {isAdmin && (
+          <div className="flex flex-col items-center gap-4 mt-4">
+            <button
+              onClick={() => setShowForm((prev) => !prev)}
+              className="bg-red-600 text-white py-2 px-6 rounded-xl hover:bg-red-700 transition"
+            >
+              {showForm ? "Hide Form" : "Add News"}
+            </button>
+            {showForm && (
+              <NewsForm
+                form={form}
+                setForm={setForm}
+                handleSubmit={handleSubmit}
+                editingId={editingId}
+              />
+            )}
+          </div>
+        )}
       </div>
     );
   }
 
   return (
     <div className="py-6 min-h-screen space-y-10 bg-gray-50">
-      {/* ✅ Admin Form Button */}
+      
+      {/* Admin Form Button and Form */}
       {isAdmin && (
         <div className="flex flex-col items-center gap-4">
           <button
-            onClick={() => setShowForm((prev) => !prev)}
+            onClick={() => {
+                setShowForm((prev) => !prev);
+                setEditingId(null); // Clear editing state when opening for Add
+                setForm({ title: "", content: "", image: null }); // Clear form data
+            }}
             className="bg-red-600 text-white py-2 px-6 rounded-xl hover:bg-red-700 transition"
           >
             {showForm ? "Hide Form" : editingId ? "Edit News" : "Add News"}
@@ -122,7 +148,7 @@ const News = () => {
         </div>
       )}
 
-      {/* Hero News */}
+      {/* Hero News - Horizontal Card */}
       <div className="cursor-pointer max-w-5xl mx-auto">
         <div className="flex flex-col md:flex-row bg-white rounded-2xl overflow-hidden shadow-lg">
           {newsArticles[0].image && (
@@ -151,6 +177,8 @@ const News = () => {
                   addSuffix: true,
                 })}
               </p>
+
+              {/* ✅ Edit/Delete Buttons for Hero News */}
               {isAdmin && (
                 <div className="flex gap-3">
                   <button
@@ -161,7 +189,7 @@ const News = () => {
                         image: null,
                       });
                       setEditingId(newsArticles[0]._id);
-                      setShowForm(true);
+                      setShowForm(true); // Open the form for editing
                     }}
                     className="text-blue-600 hover:underline"
                   >
@@ -214,6 +242,7 @@ const News = () => {
                     addSuffix: true,
                   })}
                 </p>
+                {/* ✅ Edit/Delete Buttons for Grid News */}
                 {isAdmin && (
                   <div className="flex gap-3 mt-3">
                     <button
@@ -224,7 +253,7 @@ const News = () => {
                           image: null,
                         });
                         setEditingId(article._id);
-                        setShowForm(true);
+                        setShowForm(true); // Open the form for editing
                       }}
                       className="text-blue-600 hover:underline"
                     >
