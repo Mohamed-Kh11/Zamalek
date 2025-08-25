@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { format } from "date-fns";
+import axios from "axios";
 
 const NewsDetails = () => {
   const { id } = useParams();
@@ -13,15 +14,14 @@ const NewsDetails = () => {
     const fetchNews = async () => {
       try {
         setError("");
-        const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:5000";
-        const res = await fetch(`${API_BASE}/api/news/${id}`);
+        const API_BASE =
+          process.env.REACT_APP_API_URL || "http://localhost:5000";
 
-        if (!res.ok) {
-          throw new Error(`Failed to fetch news (status: ${res.status})`);
-        }
+        const res = await axios.get(`${API_BASE}/api/news/${id}`, {
+          withCredentials: true, // include cookies if needed
+        });
 
-        const data = await res.json();
-        setNews(data);
+        setNews(res.data);
       } catch (err) {
         console.error("Error fetching news:", err);
         setError("Unable to load news. Please try again later.");
@@ -42,9 +42,7 @@ const NewsDetails = () => {
 
   if (error) {
     return (
-      <div className="py-20 text-center text-red-600 text-lg">
-        {error}
-      </div>
+      <div className="py-20 text-center text-red-600 text-lg">{error}</div>
     );
   }
 
@@ -88,8 +86,7 @@ const NewsDetails = () => {
           {/* Metadata */}
           {news.publishedAt && (
             <p className="text-gray-400 text-sm md:text-base">
-              Published on:{" "}
-              {format(new Date(news.publishedAt), "PPPp")}
+              Published on: {format(new Date(news.publishedAt), "PPPp")}
             </p>
           )}
 

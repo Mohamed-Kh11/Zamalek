@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { formatDistanceToNow } from "date-fns";
 import NewsForm from "./NewsForm";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
 const News = () => {
   const [newsArticles, setNewsArticles] = useState([]);
@@ -20,9 +21,8 @@ const News = () => {
   useEffect(() => {
     const fetchNews = async () => {
       try {
-        const res = await fetch(`${API_URL}/api/news`);
-        const data = await res.json();
-        setNewsArticles(data);
+        const res = await axios.get(`${API_URL}/api/news`);
+        setNewsArticles(res.data);
       } catch (err) {
         console.error("Error fetching news:", err);
       } finally {
@@ -46,16 +46,19 @@ const News = () => {
       const url = editingId
         ? `${API_URL}/api/news/${editingId}`
         : `${API_URL}/api/news`;
-      const method = editingId ? "PATCH" : "POST";
+      const method = editingId ? "patch" : "post";
 
-      const res = await fetch(url, {
+      const res = await axios({
         method,
-        headers: { Authorization: `Bearer ${token}` },
-        body: formData,
+        url,
+        data: formData,
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "multipart/form-data",
+        },
       });
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message);
+      const data = res.data;
 
       setNewsArticles((prev) =>
         editingId
@@ -67,7 +70,10 @@ const News = () => {
       setEditingId(null);
       setShowForm(false);
     } catch (err) {
-      console.error("Error saving news:", err);
+      console.error(
+        "Error saving news:",
+        err.response?.data?.message || err.message
+      );
     }
   };
 
@@ -75,19 +81,16 @@ const News = () => {
   const handleDelete = async (id) => {
     const token = localStorage.getItem("token");
     try {
-      const res = await fetch(`${API_URL}/api/news/${id}`, {
-        method: "DELETE",
+      await axios.delete(`${API_URL}/api/news/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.message || "Failed to delete news");
-      }
-
       setNewsArticles((prev) => prev.filter((n) => n._id !== id));
     } catch (err) {
-      console.error("Error deleting news:", err);
+      console.error(
+        "Error deleting news:",
+        err.response?.data?.message || err.message
+      );
     }
   };
 
