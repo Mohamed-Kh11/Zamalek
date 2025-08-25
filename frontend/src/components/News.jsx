@@ -1,54 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { formatDistanceToNow } from "date-fns";
+import NewsForm from "./NewsForm";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
-const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
-
-// --- NewsForm Component ---
-const NewsForm = ({ form, setForm, handleSubmit, editingId }) => {
-  return (
-    <form
-      onSubmit={handleSubmit}
-      className="bg-white p-6 rounded-xl shadow-md w-full max-w-lg flex flex-col gap-4"
-    >
-      <h2 className="text-lg font-bold text-red-600">
-        {editingId ? "Edit News" : "Add News"}
-      </h2>
-
-      <input
-        type="text"
-        value={form.title}
-        onChange={(e) => setForm({ ...form, title: e.target.value })}
-        placeholder="Title"
-        className="border p-2 rounded"
-        required
-      />
-      <textarea
-        value={form.content}
-        onChange={(e) => setForm({ ...form, content: e.target.value })}
-        placeholder="Content"
-        className="border p-2 rounded min-h-[120px]"
-        required
-      />
-      <input
-        type="file"
-        accept="image/*"
-        onChange={(e) => setForm({ ...form, image: e.target.files[0] })}
-        className="border p-2 rounded"
-      />
-
-      <button
-        type="submit"
-        className="bg-red-600 text-white py-2 px-4 rounded hover:bg-red-700 transition"
-      >
-        {editingId ? "Update News" : "Add News"}
-      </button>
-    </form>
-  );
-};
-
-// --- Main News Component ---
 const News = () => {
   const [newsArticles, setNewsArticles] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -56,70 +11,67 @@ const News = () => {
   const [editingId, setEditingId] = useState(null);
   const [showForm, setShowForm] = useState(false);
 
+  const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
+
   const navigate = useNavigate();
-  const user = JSON.parse(localStorage.getItem("user")); // only admin exists
-  const isAdmin = !!user;
+  const [isAdmin, setIsAdmin] = useState(false);
 
-  // Fetch news
+  // ✅ Fetch user info from backend (instead of localStorage)
   useEffect(() => {
-    const fetchNews = async () => {
-      try {
-        const res = await axios.get(`${API_URL}/api/news`, {
-          withCredentials: true,
-        });
-        setNewsArticles(res.data);
-      } catch (err) {
-        console.error("Error fetching news:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchNews();
-  }, []);
+    axios
+      .get(`${API_URL}/api/auth/me`, { withCredentials: true })
+      .then((res) => {
+        setIsAdmin(res.data?.role === "admin"); // backend should return role
+      })
+      .catch(() => setIsAdmin(false));
+  }, [API_URL]);
 
-  // Add or update news
+  // ✅ Fetch news
+  useEffect(() => {
+    axios
+      .get(`${API_URL}/api/news`, { withCredentials: true })
+      .then((res) => setNewsArticles(res.data))
+      .catch((err) => console.error("Error fetching news:", err))
+      .finally(() => setLoading(false));
+  }, [API_URL]);
+
+  // ✅ Add or update news
   const handleSubmit = async (e) => {
     e.preventDefault();
     const formData = new FormData();
-    Object.keys(form).forEach((key) => {
-      if (form[key] !== null && form[key] !== "") {
-        formData.append(key, form[key]);
-      }
-    });
+    formData.append("title", form.title);
+    formData.append("content", form.content);
+    if (form.image) formData.append("image", form.image);
 
     try {
-      let res;
-      if (editingId) {
-        res = await axios.patch(`${API_URL}/api/news/${editingId}`, formData, {
-          withCredentials: true,
-          headers: { "Content-Type": "multipart/form-data" },
-        });
-      } else {
-        res = await axios.post(`${API_URL}/api/news`, formData, {
-          withCredentials: true,
-          headers: { "Content-Type": "multipart/form-data" },
-        });
-      }
+      const url = editingId
+        ? `${API_URL}/api/news/${editingId}`
+        : `${API_URL}/api/news`;
+      const method = editingId ? "patch" : "post";
+
+      const res = await axios({
+        method,
+        url,
+        data: formData,
+        withCredentials: true, // ✅ Send cookies
+        headers: { "Content-Type": "multipart/form-data" },
+      });
 
       const data = res.data;
 
-      if (editingId) {
-        setNewsArticles((prev) =>
-          prev.map((n) => (n._id === editingId ? data : n))
-        );
-      } else {
-        setNewsArticles((prev) => [data, ...prev]);
-      }
+      setNewsArticles((prev) =>
+        editingId ? prev.map((n) => (n._id === editingId ? data : n)) : [data, ...prev]
+      );
 
       setForm({ title: "", content: "", image: null });
       setEditingId(null);
       setShowForm(false);
     } catch (err) {
-      console.error("Error saving news:", err.response?.data || err.message);
+      console.error("Error saving news:", err.response?.data?.message || err.message);
     }
   };
 
-  // Delete news
+  // ✅ Delete news
   const handleDelete = async (id) => {
     try {
       await axios.delete(`${API_URL}/api/news/${id}`, {
@@ -127,11 +79,10 @@ const News = () => {
       });
       setNewsArticles((prev) => prev.filter((n) => n._id !== id));
     } catch (err) {
-      console.error("Error deleting news:", err.response?.data || err.message);
+      console.error("Error deleting news:", err.response?.data?.message || err.message);
     }
   };
 
-  // UI States
   if (loading) {
     return (
       <div className="py-10 text-center text-gray-600 text-lg">
@@ -144,31 +95,13 @@ const News = () => {
     return (
       <div className="py-10 text-center text-gray-600 text-lg">
         No news available yet.
-        {isAdmin && (
-          <div className="mt-4">
-            <button
-              onClick={() => setShowForm(true)}
-              className="bg-red-600 text-white py-2 px-6 rounded-xl hover:bg-red-700 transition"
-            >
-              Add News
-            </button>
-            {showForm && (
-              <NewsForm
-                form={form}
-                setForm={setForm}
-                handleSubmit={handleSubmit}
-                editingId={editingId}
-              />
-            )}
-          </div>
-        )}
       </div>
     );
   }
 
   return (
     <div className="py-6 min-h-screen space-y-10 bg-gray-50">
-      {/* Admin Form */}
+      {/* ✅ Admin Form Button */}
       {isAdmin && (
         <div className="flex flex-col items-center gap-4">
           <button
@@ -247,7 +180,7 @@ const News = () => {
         </div>
       </div>
 
-      {/* Secondary News */}
+      {/* Secondary News Grid */}
       <div>
         <h2 className="text-2xl font-bold border-b-2 border-red-600 pb-2 mb-6 text-center">
           📰 Latest News
@@ -281,7 +214,6 @@ const News = () => {
                     addSuffix: true,
                   })}
                 </p>
-
                 {isAdmin && (
                   <div className="flex gap-3 mt-3">
                     <button
