@@ -47,6 +47,7 @@ const Players = () => {
   // ✅ Handle add/edit
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     const formData = new FormData();
     formData.append("name", form.name);
     formData.append("position", form.position);
@@ -57,26 +58,17 @@ const Players = () => {
     try {
       let res;
       if (editingId) {
-        res = await fetch(`${API_URL}/api/players/${editingId}`, {
-          method: "PUT",
+        res = await axios.put(`${API_URL}/api/players/${editingId}`, formData, {
           headers: { Authorization: `Bearer ${token}` },
-          body: formData,
         });
+        setPlayers((prev) =>
+          prev.map((p) => (p._id === editingId ? res.data : p))
+        );
       } else {
-        res = await fetch(`${API_URL}/api/players`, {
-          method: "POST",
+        res = await axios.post(`${API_URL}/api/players`, formData, {
           headers: { Authorization: `Bearer ${token}` },
-          body: formData,
         });
-      }
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message);
-
-      if (editingId) {
-        setPlayers((prev) => prev.map((p) => (p._id === editingId ? data : p)));
-      } else {
-        setPlayers((prev) => [data, ...prev]);
+        setPlayers((prev) => [res.data, ...prev]);
       }
 
       // Reset form
@@ -84,21 +76,19 @@ const Players = () => {
       setEditingId(null);
       setShowForm(false);
     } catch (err) {
-      console.error("Error saving player:", err);
+      console.error("Error saving player:", err.response?.data || err.message);
     }
   };
 
   // ✅ Handle delete
   const handleDelete = async (id) => {
     try {
-      const res = await fetch(`${API_URL}/api/players/${id}`, {
-        method: "DELETE",
+      await axios.delete(`${API_URL}/api/players/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (!res.ok) throw new Error("Failed to delete player");
       setPlayers((prev) => prev.filter((p) => p._id !== id));
     } catch (err) {
-      console.error("Error deleting player:", err);
+      console.error("Error deleting player:", err.response?.data || err.message);
     }
   };
 
@@ -116,7 +106,13 @@ const Players = () => {
       {isAdmin && (
         <div className="flex flex-col items-center mb-6">
           <button
-            onClick={() => setShowForm((prev) => !prev)}
+            onClick={() => {
+              if (editingId) {
+                setEditingId(null);
+                setForm({ name: "", position: "", age: "", nationality: "", image: null });
+              }
+              setShowForm((prev) => !prev);
+            }}
             className="bg-red-600 text-white py-2 px-6 rounded-xl hover:bg-red-700 transition"
           >
             {showForm ? "Hide Form" : editingId ? "Edit Player" : "Add Player"}
@@ -170,7 +166,13 @@ const Players = () => {
                     <div className="flex gap-2 mt-2 sm:mt-0 sm:ml-auto sm:hidden">
                       <button
                         onClick={() => {
-                          setForm({ name: p.name, position: p.position, age: p.age, nationality: p.nationality, image: null });
+                          setForm({
+                            name: p.name,
+                            position: p.position,
+                            age: p.age,
+                            nationality: p.nationality,
+                            image: null,
+                          });
                           setEditingId(p._id);
                           setShowForm(true);
                         }}
@@ -196,7 +198,13 @@ const Players = () => {
                   <td className="p-3 hidden sm:flex gap-2">
                     <button
                       onClick={() => {
-                        setForm({ name: p.name, position: p.position, age: p.age, nationality: p.nationality, image: null });
+                        setForm({
+                          name: p.name,
+                          position: p.position,
+                          age: p.age,
+                          nationality: p.nationality,
+                          image: null,
+                        });
                         setEditingId(p._id);
                         setShowForm(true);
                       }}

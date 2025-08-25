@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import axios from "axios";
 import LeagueForm from "./LeagueForm";
 
-  const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
+const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
 const LeagueTable = () => {
   const [table, setTable] = useState([]);
@@ -22,14 +22,16 @@ const LeagueTable = () => {
   });
   const [showForm, setShowForm] = useState(false);
 
-  const user = JSON.parse(localStorage.getItem("user")); // Admin only
+  const user = JSON.parse(localStorage.getItem("user")); // Admin check only
   const isAdmin = !!user;
 
-  // Fetch table
+  // ✅ Fetch league table
   useEffect(() => {
     const fetchTable = async () => {
       try {
-        const { data } = await axios.get(`${API_URL}/api/table`);
+        const { data } = await axios.get(`${API_URL}/api/table`, {
+          withCredentials: true,
+        });
         const sorted = data.sort((a, b) => b.points - a.points);
         setTable(sorted);
       } catch (error) {
@@ -42,30 +44,26 @@ const LeagueTable = () => {
     fetchTable();
   }, []);
 
-  // Add or update team
+  // ✅ Add or update team
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       let res;
       if (editingId) {
-        res = await axios.put(
-          `${API_URL}/api/table/${editingId}`,
-          form,
-          { headers: { Authorization: `Bearer ${user?.token}` } }
-        );
+        res = await axios.put(`${API_URL}/api/table/${editingId}`, form, {
+          withCredentials: true,
+        });
         setTable((prev) =>
           prev.map((team) => (team._id === editingId ? res.data : team))
         );
       } else {
-        res = await axios.post(
-          `${API_URL}/api/table`,
-          form,
-          { headers: { Authorization: `Bearer ${user?.token}` } }
-        );
-        setTable([res.data, ...table]);
+        res = await axios.post(`${API_URL}/api/table`, form, {
+          withCredentials: true,
+        });
+        setTable((prev) => [res.data, ...prev]);
       }
 
-      // reset form
+      // Reset form
       setForm({
         team: "",
         points: 0,
@@ -83,11 +81,11 @@ const LeagueTable = () => {
     }
   };
 
-  // Delete team
+  // ✅ Delete team
   const handleDelete = async (id) => {
     try {
       await axios.delete(`${API_URL}/api/table/${id}`, {
-        headers: { Authorization: `Bearer ${user?.token}` },
+        withCredentials: true,
       });
       setTable((prev) => prev.filter((t) => t._id !== id));
     } catch (err) {

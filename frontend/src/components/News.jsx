@@ -10,24 +10,26 @@ const News = () => {
   const [editingId, setEditingId] = useState(null);
   const [showForm, setShowForm] = useState(false);
 
-  // ✅ Use environment variable (fallback to localhost for dev)
   const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
   const navigate = useNavigate();
-  const user = JSON.parse(localStorage.getItem("user")); // Only admins exist
+  const user = JSON.parse(localStorage.getItem("user"));
   const isAdmin = !!user;
 
+  // Fetch news
   useEffect(() => {
-    fetch(`${API_URL}/api/news`)
-      .then((res) => res.json())
-      .then((data) => {
+    const fetchNews = async () => {
+      try {
+        const res = await fetch(`${API_URL}/api/news`);
+        const data = await res.json();
         setNewsArticles(data);
-        setLoading(false);
-      })
-      .catch((err) => {
+      } catch (err) {
         console.error("Error fetching news:", err);
+      } finally {
         setLoading(false);
-      });
+      }
+    };
+    fetchNews();
   }, [API_URL]);
 
   // Add or update news
@@ -41,34 +43,29 @@ const News = () => {
     const token = localStorage.getItem("token");
 
     try {
-      let res;
-      if (editingId) {
-        res = await fetch(`${API_URL}/api/news/${editingId}`, {
-          method: "PATCH",
-          headers: { Authorization: `Bearer ${token}` },
-          body: formData,
-        });
-      } else {
-        res = await fetch(`${API_URL}/api/news`, {
-          method: "POST",
-          headers: { Authorization: `Bearer ${token}` },
-          body: formData,
-        });
-      }
+      const url = editingId
+        ? `${API_URL}/api/news/${editingId}`
+        : `${API_URL}/api/news`;
+      const method = editingId ? "PATCH" : "POST";
+
+      const res = await fetch(url, {
+        method,
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.message);
 
-      if (editingId) {
-        setNewsArticles((prev) =>
-          prev.map((n) => (n._id === editingId ? data : n))
-        );
-      } else {
-        setNewsArticles([data, ...newsArticles]);
-      }
+      setNewsArticles((prev) =>
+        editingId
+          ? prev.map((n) => (n._id === editingId ? data : n))
+          : [data, ...prev]
+      );
 
       setForm({ title: "", content: "", image: null });
       setEditingId(null);
+      setShowForm(false);
     } catch (err) {
       console.error("Error saving news:", err);
     }
@@ -76,7 +73,7 @@ const News = () => {
 
   // Delete news
   const handleDelete = async (id) => {
-    const token = user?.token;
+    const token = localStorage.getItem("token");
     try {
       const res = await fetch(`${API_URL}/api/news/${id}`, {
         method: "DELETE",
@@ -94,6 +91,7 @@ const News = () => {
     }
   };
 
+  // UI States
   if (loading) {
     return (
       <div className="py-10 text-center text-gray-600 text-lg">
@@ -121,21 +119,19 @@ const News = () => {
           >
             {showForm ? "Hide Form" : editingId ? "Edit News" : "Add News"}
           </button>
+
           {showForm && (
             <NewsForm
               form={form}
               setForm={setForm}
-              handleSubmit={(e) => {
-                handleSubmit(e);
-                setShowForm(false);
-              }}
+              handleSubmit={handleSubmit}
               editingId={editingId}
             />
           )}
         </div>
       )}
 
-      {/* Hero News - Horizontal Card */}
+      {/* Hero News */}
       <div className="cursor-pointer max-w-5xl mx-auto">
         <div className="flex flex-col md:flex-row bg-white rounded-2xl overflow-hidden shadow-lg">
           {newsArticles[0].image && (
@@ -164,7 +160,6 @@ const News = () => {
                   addSuffix: true,
                 })}
               </p>
-
               {isAdmin && (
                 <div className="flex gap-3">
                   <button
@@ -194,7 +189,7 @@ const News = () => {
         </div>
       </div>
 
-      {/* Secondary News Grid */}
+      {/* Secondary News */}
       <div>
         <h2 className="text-2xl font-bold border-b-2 border-red-600 pb-2 mb-6 text-center">
           📰 Latest News
