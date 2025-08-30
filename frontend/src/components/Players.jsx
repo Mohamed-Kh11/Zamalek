@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { motion } from "framer-motion";
 import PlayerForm from "./PlayerForm";
+import { toast, Toaster } from "react-hot-toast";
 
 const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
@@ -30,15 +31,19 @@ const Players = () => {
   useEffect(() => {
     const fetchPlayers = async () => {
       try {
+        toast.loading("Fetching players...");
         const { data } = await axios.get(`${API_URL}/api/players`, {
           withCredentials: true,
         });
+        toast.dismiss();
+        toast.success(`Loaded ${data.length} players`);
         const sorted = data.sort(
           (a, b) => (positionOrder[a.position] || 99) - (positionOrder[b.position] || 99)
         );
         setPlayers(sorted);
       } catch (err) {
-        console.error("Error fetching players:", err);
+        toast.dismiss();
+        toast.error(`Error fetching players: ${err.response?.data?.message || err.message}`);
       } finally {
         setLoading(false);
       }
@@ -49,6 +54,7 @@ const Players = () => {
   // ✅ Handle add/edit
   const handleSubmit = async (e) => {
     e.preventDefault();
+    toast("Submitting form...");
 
     const formData = new FormData();
     formData.append("name", form.name);
@@ -60,37 +66,47 @@ const Players = () => {
     try {
       let res;
       if (editingId) {
+        toast.loading("Updating player...");
         res = await axios.put(`${API_URL}/api/players/${editingId}`, formData, {
           withCredentials: true,
         });
+        toast.dismiss();
+        toast.success("Player updated ✅");
         setPlayers((prev) =>
           prev.map((p) => (p._id === editingId ? res.data : p))
         );
       } else {
+        toast.loading("Adding player...");
         res = await axios.post(`${API_URL}/api/players`, formData, {
           withCredentials: true,
         });
+        toast.dismiss();
+        toast.success("Player added ✅");
         setPlayers((prev) => [res.data, ...prev]);
       }
 
-      // Reset form
       setForm({ name: "", position: "", age: "", nationality: "", image: null });
       setEditingId(null);
       setShowForm(false);
     } catch (err) {
-      console.error("Error saving player:", err.response?.data || err.message);
+      toast.dismiss();
+      toast.error(`Error saving player: ${err.response?.data?.message || err.message}`);
     }
   };
 
   // ✅ Handle delete
   const handleDelete = async (id) => {
     try {
+      toast.loading("Deleting player...");
       await axios.delete(`${API_URL}/api/players/${id}`, {
-          withCredentials: true,
-        });
+        withCredentials: true,
+      });
+      toast.dismiss();
+      toast.success("Player deleted ✅");
       setPlayers((prev) => prev.filter((p) => p._id !== id));
     } catch (err) {
-      console.error("Error deleting player:", err.response?.data || err.message);
+      toast.dismiss();
+      toast.error(`Error deleting player: ${err.response?.data?.message || err.message}`);
     }
   };
 
@@ -103,7 +119,12 @@ const Players = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-2 md:px-6 font-josefin">
-      <h1 className="text-4xl font-bold text-center text-red-600 mb-8">⚽ Team Squad</h1>
+      {/* ✅ Add Toaster so we can see messages on screen */}
+      <Toaster position="top-center" reverseOrder={false} />
+
+      <h1 className="text-4xl font-bold text-center text-red-600 mb-8">
+        ⚽ Team Squad
+      </h1>
 
       {isAdmin && (
         <div className="flex flex-col items-center mb-6">
@@ -168,6 +189,7 @@ const Players = () => {
                     <div className="flex gap-2 mt-2 sm:mt-0 sm:ml-auto sm:hidden">
                       <button
                         onClick={() => {
+                          toast("Editing player...");
                           setForm({
                             name: p.name,
                             position: p.position,
@@ -193,13 +215,16 @@ const Players = () => {
                 </td>
                 <td className="p-3 text-gray-600 text-xs sm:text-sm">{p.position}</td>
                 <td className="p-3 text-gray-600 text-xs sm:text-sm">{p.age}</td>
-                <td className="p-3 text-gray-600 hidden md:table-cell text-xs sm:text-sm">{p.nationality}</td>
+                <td className="p-3 text-gray-600 hidden md:table-cell text-xs sm:text-sm">
+                  {p.nationality}
+                </td>
 
                 {/* Medium+ actions */}
                 {isAdmin && (
                   <td className="p-3 hidden sm:flex gap-2">
                     <button
                       onClick={() => {
+                        toast("Editing player...");
                         setForm({
                           name: p.name,
                           position: p.position,
