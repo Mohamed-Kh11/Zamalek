@@ -37,6 +37,7 @@ app.get("/", (req, res) => {
 // -------------------------
 // ROUTES
 // -------------------------
+app.set("trust proxy", 1);
 app.use("/api/news", newsRoutes);
 app.use("/api/matches", matchRoutes);
 app.use("/api/table", tableRoutes);
