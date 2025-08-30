@@ -69,6 +69,9 @@ const Players = () => {
         toast.loading("Updating player...");
         res = await axios.put(`${API_URL}/api/players/${editingId}`, formData, {
           withCredentials: true,
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
         });
         toast.dismiss();
         toast.success("Player updated ✅");
@@ -79,6 +82,9 @@ const Players = () => {
         toast.loading("Adding player...");
         res = await axios.post(`${API_URL}/api/players`, formData, {
           withCredentials: true,
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
         });
         toast.dismiss();
         toast.success("Player added ✅");
@@ -100,6 +106,9 @@ const Players = () => {
       toast.loading("Deleting player...");
       await axios.delete(`${API_URL}/api/players/${id}`, {
         withCredentials: true,
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
       });
       toast.dismiss();
       toast.success("Player deleted ✅");
