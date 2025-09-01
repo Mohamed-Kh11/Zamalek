@@ -70,7 +70,7 @@ const MatchForm = ({ form, setForm, handleSubmit, editingId }) => {
         className="border p-2 rounded"
       />
 
-      {/* New Score Inputs */}
+      {/* Zamalek & Opponent Score Inputs */}
       <div className="flex gap-4">
         <input
           type="number"
@@ -375,29 +375,40 @@ const Team = ({ logo, name }) => (
   </div>
 );
 
-const Score = ({ match, isNearest, matchDate }) => (
-  <div className="flex flex-col items-center">
-    <span
-      className={`font-extrabold ${
-        isNearest ? "text-red-600 text-3xl" : "text-gray-800 text-xl"
-      }`}
-    >
-      {match.score?.zamalek !== null && match.score?.opponent !== null
-        ? `${match.score.zamalek} - ${match.score.opponent}`
-        : "vs"}
-    </span>
-    <span className="mt-1 text-xs text-gray-500">
-      {matchDate.toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-      })}{" "}
-      •{" "}
-      {matchDate.toLocaleTimeString("en-US", {
-        hour: "2-digit",
-        minute: "2-digit",
-      })}
-    </span>
-  </div>
-);
+const Score = ({ match, isNearest, matchDate }) => {
+  const zamalekIsHome = match.homeOrAway === "home";
+  const zamalekScore = match.score?.zamalek ?? null;
+  const opponentScore = match.score?.opponent ?? null;
+
+  const displayScore =
+    zamalekScore != null && opponentScore != null
+      ? zamalekIsHome
+        ? `${zamalekScore} - ${opponentScore}` // Zamalek on left
+        : `${opponentScore} - ${zamalekScore}` // Zamalek on right
+      : "vs";
+
+  return (
+    <div className="flex flex-col items-center">
+      <span
+        className={`font-extrabold ${
+          isNearest ? "text-red-600 text-3xl" : "text-gray-800 text-xl"
+        }`}
+      >
+        {displayScore}
+      </span>
+      <span className="mt-1 text-xs text-gray-500">
+        {matchDate.toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+        })}{" "}
+        •{" "}
+        {matchDate.toLocaleTimeString("en-US", {
+          hour: "2-digit",
+          minute: "2-digit",
+        })}
+      </span>
+    </div>
+  );
+};
 
 export default Matches;
