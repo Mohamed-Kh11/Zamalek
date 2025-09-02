@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import Slider from "react-slick";
 import axios from "axios";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { Helmet } from "react-helmet";
 
 // Rectangular Custom Arrows
 const PrevArrow = ({ onClick }) => (
@@ -30,7 +31,7 @@ const Carousel = () => {
     const fetchNews = async () => {
       try {
         const res = await axios.get(`${API_BASE}/api/news`);
-        setNews(res.data.slice(0, 3));
+        setNews(res.data.slice(0, 3)); // take first 3 news articles
       } catch (error) {
         console.error("Error fetching news:", error);
       }
@@ -52,10 +53,20 @@ const Carousel = () => {
 
   if (news.length === 0) return null;
 
+  const firstImage = news[0]?.image;
+
   return (
     <div className="lg:col-span-3 relative">
+      <Helmet>
+        {/* Preconnect to your image CDN (important for faster TLS handshake) */}
+        <link rel="preconnect" href="https://res.cloudinary.com" />
+
+        {/* Preload the first image for faster LCP */}
+        {firstImage && <link rel="preload" as="image" href={firstImage} />}
+      </Helmet>
+
       <Slider {...settings}>
-        {news.map((article) => (
+        {news.map((article, index) => (
           <div
             key={article._id}
             className="relative h-[490px] md:h-[580px] rounded-xl overflow-hidden shadow"
@@ -65,6 +76,8 @@ const Carousel = () => {
                 src={article.image}
                 alt={article.title}
                 className="w-full h-full object-cover"
+                loading={index === 0 ? "eager" : "lazy"}
+                fetchPriority={index === 0 ? "high" : "auto"}
               />
             )}
             <div className="absolute inset-0 flex items-end pb-5 justify-center">
