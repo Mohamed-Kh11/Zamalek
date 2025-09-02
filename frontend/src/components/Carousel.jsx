@@ -27,15 +27,18 @@ const NextArrow = ({ onClick }) => (
 
 const Carousel = () => {
   const [news, setNews] = useState([]);
+  const [loading, setLoading] = useState(true);
   const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
   useEffect(() => {
     const fetchNews = async () => {
       try {
         const res = await axios.get(`${API_BASE}/api/news`);
-        setNews(res.data.slice(0, 3)); // take first 3 news articles
+        setNews(res.data.slice(0, 3));
       } catch (error) {
         console.error("Error fetching news:", error);
+      } finally {
+        setLoading(false);
       }
     };
     fetchNews();
@@ -53,6 +56,15 @@ const Carousel = () => {
     prevArrow: <PrevArrow />,
   };
 
+  if (loading) {
+    // Skeleton placeholder for smoother layout stability
+    return (
+      <div className="lg:col-span-3 relative">
+        <div className="animate-pulse h-[490px] md:h-[580px] rounded-xl bg-gray-300"></div>
+      </div>
+    );
+  }
+
   if (news.length === 0) return null;
 
   const firstImage = news[0]?.image;
@@ -60,10 +72,7 @@ const Carousel = () => {
   return (
     <div className="lg:col-span-3 relative">
       <Helmet>
-        {/* Preconnect to your image CDN (important for faster TLS handshake) */}
         <link rel="preconnect" href="https://res.cloudinary.com" />
-
-        {/* Preload the first image for faster LCP */}
         {firstImage && <link rel="preload" as="image" href={firstImage} />}
       </Helmet>
 
