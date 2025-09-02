@@ -1,6 +1,6 @@
 // src/components/Footer.jsx
 import { NavLink } from "react-router-dom";
-import logo from "../images/logzsc.webp";
+import logo from "../images/logozsc.webp";
 
 const Footer = () => {
   const linkStyle =
