@@ -75,6 +75,8 @@ const Carousel = () => {
               <img
                 src={article.image}
                 alt={article.title}
+                width="1920"
+                height="1080"
                 className="w-full h-full object-cover"
                 loading={index === 0 ? "eager" : "lazy"}
                 fetchPriority={index === 0 ? "high" : "auto"}
