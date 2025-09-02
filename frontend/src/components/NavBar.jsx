@@ -6,7 +6,7 @@ import { useSelector, useDispatch } from "react-redux";
 import { logout } from "../features/auth/authSlice";
 import axios from "axios";
 
-import logo from "../images/logozsc.png";
+import logo from "../images/logozsc.webp";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);

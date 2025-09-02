@@ -1,7 +1,7 @@
 // src/pages/Matches.jsx
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import zamalekLogo from "../../src/images/zamalek.png";
+import zamalekLogo from "../../src/images/zamalek.webp";
 import { MapPin, Trophy } from "lucide-react";
 import axios from "axios";
 const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
