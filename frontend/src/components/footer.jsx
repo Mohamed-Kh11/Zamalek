@@ -1,6 +1,6 @@
 // src/components/Footer.jsx
 import { NavLink } from "react-router-dom";
-import logo from "../images/logzsc.png";
+import logo from "../images/logzsc.webp";
 
 const Footer = () => {
   const linkStyle =
@@ -16,6 +16,9 @@ const Footer = () => {
             src={logo}
             alt="Zamalek Logo"
             className="h-12 w-auto"
+            width="120"
+            height="48"
+            loading="lazy"
           />
           <span className="text-gray-700 font-bold text-lg">
             Zamalek SC

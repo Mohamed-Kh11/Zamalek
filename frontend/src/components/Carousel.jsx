@@ -9,6 +9,7 @@ const PrevArrow = ({ onClick }) => (
   <button
     onClick={onClick}
     className="absolute left-0 top-1/2 -translate-y-1/2 z-20 bg-red-600 hover:bg-red-700 text-white font-bold px-1 py-4 shadow-lg rounded-r"
+    aria-label="Previous slide"
   >
     <ChevronLeft size={24} />
   </button>
@@ -18,6 +19,7 @@ const NextArrow = ({ onClick }) => (
   <button
     onClick={onClick}
     className="absolute right-0 top-1/2 -translate-y-1/2 z-20 bg-red-600 hover:bg-red-700 text-white font-bold px-1 py-4 shadow-lg rounded-l"
+    aria-label="Next slide"
   >
     <ChevronRight size={24} />
   </button>

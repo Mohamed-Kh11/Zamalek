@@ -9,7 +9,6 @@ const NextMatch = () => {
   useEffect(() => {
     const fetchMatches = async () => {
       try {
-        // ✅ Base URL from environment (fallback to localhost for dev)
         const API_BASE =
           process.env.REACT_APP_API_URL || "http://localhost:5000";
 
@@ -50,13 +49,20 @@ const NextMatch = () => {
     fetchMatches();
   }, []);
 
-  if (loading) {
-    return (
-      <div className="flex-1 bg-gradient-to-br from-red-600 to-black text-white rounded-xl shadow-lg p-6 flex items-center justify-center">
-        Loading next match...
+  const Skeleton = () => (
+    <div className="flex-1 bg-gradient-to-br from-red-600 to-black text-white rounded-xl shadow-lg p-5 flex flex-col justify-between animate-pulse">
+      <div className="h-6 bg-red-300/40 rounded mb-6"></div>
+      <div className="flex items-center justify-center gap-10">
+        <div className="w-20 h-20 bg-white/30 rounded-full"></div>
+        <div className="text-3xl text-white font-bold">vs</div>
+        <div className="w-20 h-20 bg-white/30 rounded-full"></div>
       </div>
-    );
-  }
+      <div className="mt-6 h-4 bg-red-300/40 rounded"></div>
+      <div className="mt-2 h-4 bg-red-300/40 rounded w-1/2 mx-auto"></div>
+    </div>
+  );
+
+  if (loading) return <Skeleton />;
 
   if (!nextMatch) {
     return (
@@ -66,13 +72,12 @@ const NextMatch = () => {
     );
   }
 
-  // Parse date
   const [year, month, day] = nextMatch.date.split("-").map(Number);
   const [hours, minutes] = nextMatch.time.split(":").map(Number);
   const matchDate = new Date(year, month - 1, day, hours, minutes);
 
   return (
-    <div className="flex-1 bg-gradient-to-br from-red-600 to-black text-white rounded-xl shadow-lg p-5 flex flex-col justify-between">
+    <div className="flex-1 bg-gradient-to-br from-red-600 to-black text-white rounded-xl shadow-lg p-5 flex flex-col justify-between min-h-[280px]">
       <h3 className="text-xl font-bold mb-6 border-b border-red-300 pb-2 text-center">
         ⚽ Next Match
       </h3>
@@ -83,8 +88,11 @@ const NextMatch = () => {
         <div className="flex flex-col items-center">
           <img
             src={zamalekLogo}
-            alt="Zamalek"
+            alt="Zamalek Logo"
             className="w-20 h-20 object-contain rounded-full bg-white p-2 shadow"
+            width="80"
+            height="80"
+            loading="lazy"
           />
           <p className="mt-2 font-semibold text-sm">Zamalek</p>
         </div>
@@ -97,8 +105,11 @@ const NextMatch = () => {
           {nextMatch.opponent.logoUrl ? (
             <img
               src={nextMatch.opponent.logoUrl}
-              alt={nextMatch.opponent.name}
+              alt={`${nextMatch.opponent.name} Logo`}
               className="w-20 h-20 object-contain rounded-full bg-white p-2 shadow"
+              width="80"
+              height="80"
+              loading="lazy"
             />
           ) : (
             <div className="w-20 h-20 rounded-full bg-white flex items-center justify-center text-black text-2xl font-bold shadow">
